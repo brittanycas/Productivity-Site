@@ -1,0 +1,119 @@
+{% extends "layout.html" %}
+
+{% block title %} Register {% endblock %}
+
+{% block body %}
+  <body>
+    <div class="container panel">
+      <form class="form-horizontal container" id="registration_form" action="/register" method="POST">
+        <fieldset>
+          <legend><h1>Registration</h1></legend>
+
+          <div class="form-group" id="name_entry">
+            <label for="name" class="control-label col-md-2 col-md-offset-1">Name</label>
+            <div class="col-md-6">
+              <input class="form-control" type="text" placeholder="Your name" name="name" id="name" required>
+            </div>
+          </div>
+
+          <div class="form-group" id="username_entry">
+            <label for="username" class="control-label col-md-2 col-md-offset-1">Username</label>
+            <div class="col-md-6">
+              <input autocomplete="off" id="username" class="form-control" type="text" placeholder="Choose a Username" name="username" required>
+            </div>
+          </div>
+
+          <div class="form-group" id="email_entry">
+            <label for="email" class="control-label col-md-2 col-md-offset-1">Email</label>
+            <div class="col-md-6">
+              <input class="form-control" id="email" type="email" placeholder="Your email" name="email" required>
+              <div id="email_error" class="text-danger">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group" id="password_entry">
+            <label for="password" class="control-label col-md-2 col-md-offset-1">Password</label>
+            <div class="col-md-6">
+              <input class="form-control" id="password" type="password" placeholder="Choose a password" name="password" required>
+            </div>
+          </div>
+
+          <div class="form-group" id="password_confirm">
+            <label for="confirm" class="control-label col-md-2 col-md-offset-1">Confirm Password</label>
+            <div class="col-md-6">
+              <input class="form-control" id="confirm" type="password" placeholder="Confirm password" name="confirm" required>
+              <div id="password_error" class="text-danger">
+              </div>
+            </div>
+          </div>
+          <div class="form-group container">
+            <div class="col-sm-2 col-sm-offset-5">
+              <button class="form-control btn btn-default" type="submit" name="submit_button" id="submit_button">Submit</button>
+            </div>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+
+    <div>
+      <p>If you already have an account click <a href="/login">here</a> to login</p>
+    </div>
+    
+  <script type="text/javascript">
+
+    let username = document.querySelector("#username");
+    let name = document.querySelector("#name");
+
+    //Email validation
+    let email = document.querySelector("#email");
+
+    email.onkeyup = function(){
+      if (/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email.value)) {
+        document.querySelector("#email_entry").classList.remove("has-error");
+        document.querySelector("#email_entry").classList.add("has-success");
+        document.querySelector("#email_error").innerHTML = "";
+      } else {
+        document.querySelector("#email_entry").classList.remove("has-success");
+        document.querySelector("#email_entry").classList.add("has-error");
+        document.querySelector("#email_error").innerHTML = "Please enter a valid email";
+      }
+    }
+    //Password Checks
+    let password = document.querySelector("#password");
+    let confirm = document.querySelector("#confirm");
+
+    confirm.onkeyup = function(){
+      if (confirm.value != password.value){
+        document.querySelector("#password_confirm").classList.remove("has-success");
+        document.querySelector("#password_confirm").classList.add("has-error");
+        document.querySelector("#password_error").innerHTML = "Passwords must match";
+      } else {
+        document.querySelector("#password_confirm").classList.remove("has-error");
+        document.querySelector("#password_confirm").classList.add("has-success");
+        document.querySelector("#password_entry").classList.add("has-success");
+        document.querySelector("#password_error").innerHTML = "";
+      }
+    }
+
+    //Check form before submission is allowed
+    let button = document.getElementById("submit_button");
+    button.addEventListener("click", function(event){
+            event.preventDefault();
+            if (name.value == "" || username.value == "" || email.value == "" || password.value == "" || confirm.value== ""){
+                return false;
+            }
+            if (document.querySelector("#email_entry").classList.contains("has-error") || document.querySelector("#password_confirm").classList.contains("has-error")) {
+                return false;
+            }
+            if (password.value != confirm.value){
+                return false;
+            }
+            else {
+                document.getElementById('registration_form').submit();
+            }
+        })
+
+  </script>
+
+{% endblock %}
