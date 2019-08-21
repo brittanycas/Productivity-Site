@@ -1,9 +1,9 @@
 {% extends "layout.html" %}
 
-{% block title %}{{ team }}{% endblock %}
+{% block title %}{{ team[0] }}{% endblock %}
 
 {% block body %}
-<h1 class="text-center page-header">{{ team }}</h1>
+<h1 class="text-center page-header">{{ team[0] }}</h1>
 
 <div class="container">
   <h3 class="text-center" style="padding: 15px;">Team Members</h3>
@@ -22,5 +22,36 @@
     </table>
   </div>
 </div>
+
+<div class="container col-sm-6 col-sm-offset-3">
+  <form class="container" action="/addmember" method="POST" id="newmember_form">
+    <div class="form-group col-sm-4 col-sm-offset-2">
+      <input type="text" name="team" value="{{team}}" hidden>
+      <label class="control-label" for="newmember">Add a user to the team</label>
+      <div class="input-group">
+      <input class="form-control" type="text" id="newmember" name="newmember" placeholder="Username" autocomplete="off">
+      <span class="input-group-btn">
+      <input class="btn btn-primary" type="submit" name="submit_button" id="submit_button" value="Add" style="border: 0px">
+      </span>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script type="text/javascript">
+  let newmember = document.querySelector("#newmember");
+
+  //Check form before submission is allowed
+  let button = document.getElementById("submit_button");
+  button.addEventListener("click", function(event){
+          event.preventDefault();
+          if (newmember.value == ""){
+              return false;
+          }
+          else {
+              document.getElementById('newmember_form').submit();
+          }
+      })
+</script>
 
 {% endblock %}

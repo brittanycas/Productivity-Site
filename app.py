@@ -29,7 +29,7 @@ def home():
         conn.close()
         return render_template('index.html', userdata=userdata)
     else:
-        return render_template('login.html')
+        return render_template('landing.html')
 
 
 @app.route('/register', methods=["GET", "POST"])
@@ -55,8 +55,12 @@ def register():
             c.execute("SELECT * FROM users WHERE email=?", (request.form.get('email'),))
             existing_email = c.fetchall()
             if len(existing_user) != 0:
+                conn.commit()
+                conn.close()
                 return "username is already in use"
             if len(existing_email) != 0:
+                conn.commit()
+                conn.close()
                 return "email is already associated with an account"
             else:
                 hashed_pass = sha256_crypt.hash(request.form.get('password'))
@@ -145,12 +149,15 @@ def createteam():
                     return redirect('/')
 
                 else:
+                    conn.commit()
+                    conn.close()
                     return "Team name is already in use"
 
 
 @app.route('/team', methods=["GET", "POST"])
 def team():
     if request.method == "POST":
+        teamdata = []
         # Open connection to the database
         conn = sqlite3.connect('userdata.db')
         c = conn.cursor()
@@ -158,6 +165,8 @@ def team():
         # Load team name
         c.execute("SELECT teamname FROM teams WHERE teamid=?", (request.form.get('team_id'),))
         teamname = c.fetchone()[0]
+        teamdata.append(teamname)
+        teamdata.append(request.form.get('team_id'))
 
         # Load team members
         memberslist = []
@@ -171,9 +180,58 @@ def team():
         # Close database connection
         conn.commit()
         conn.close()
-        return render_template('team.html', team=teamname, members=memberslist)
+        return render_template('team.html', team=teamdata, members=memberslist)
     else:
         return render_template('index.html')
+
+@app.route('/addmember', methods=["GET", "POST"])
+def addmember():
+    if request.method == "POST":
+        if not request.form.get('team') or not request.form.get('newmember'):
+            return redirect('/')
+        else:
+            # Open database connection
+            conn = sqlite3.connect('userdata.db')
+            c = conn.cursor()
+
+            # Find user id for new member
+            c.execute("SELECT userid FROM users WHERE username=?", (request.form.get('newmember'),))
+            memberid = c.fetchone()
+
+            # Check that the submitted username was valid
+            if not memberid:
+                conn.commit()
+                conn.close()
+                return "User does not exist"
+            else:
+                #Add user to team
+                teamdata = request.form.get('team')
+                teamid = teamdata.replace("'", "").strip('[]').split(',')
+                c.execute("INSERT INTO user_team (userid, teamid) VALUES (?,?)", (memberid[0], teamid[1]))
+                conn.commit()
+                conn.close()
+                return "User has been added"
+
+
+    else:
+        return redirect('/')
+
+
+@app.route('/leave', methods=["GET", "POST"])
+def leave():
+    if request.method == "POST":
+        conn = sqlite3.connect('userdata.db')
+        c = conn.cursor()
+
+        # Remove user from team
+        c.execute("DELETE FROM user_team WHERE userid=? AND teamid=?", (session.get('userid'), (request.form.get('team_id')),))
+
+        # Close database connection
+        conn.commit()
+        conn.close()
+        return redirect('/')
+    else:
+        redirect('/')
 
 
 if __name__ == '__main__':

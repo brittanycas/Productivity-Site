@@ -12,13 +12,20 @@
   <div class="container col-md-6 col-md-offset-3">
     <table class="table table-striped">
       <thead>
-          <th>Team Name</th>
-          <th>Role</th>
+          <th class="col-md-2 text-center">Team Name</th>
+          <th class="col-md-2 text-center">Role</th>
+          <th class="col-md-2 text-center">Leave the Team?</th>
       </thead>
       {% for team in userdata%}
-        <tr>
+        <tr class="text-center">
           <td> {{ team[0] }} </td>
           <td> {{ team[1] }} </td>
+          <td>
+            <form method="POST" action="/leave">
+            <input type="hidden" name="team_id" value="{{ team[2] }}">
+            <button type="submit" name="submit_param" value="submit_value" class="btn btn-default"> Leave </button>
+            </form>
+          </td>
         <tr>
       {% endfor %}
 
