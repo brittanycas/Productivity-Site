@@ -3039,9 +3039,10 @@ fieldset[disabled] a.btn {
   pointer-events: none;
 }
 .btn-default {
-  color: #ffffff;
+  color: #c8c8c8;
   background-color: #3a3f44;
   border-color: #3a3f44;
+  border-radius: 0;
 }
 .btn-default:focus,
 .btn-default.focus {
@@ -6695,7 +6696,6 @@ button.close {
 }
 .btn,
 .btn:hover {
-  border-color: rgba(0, 0, 0, 0.6);
   text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
 }
 .btn-default {

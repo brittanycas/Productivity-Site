@@ -1,0 +1,47 @@
+{% extends "layout.html" %}
+
+{% block title %} Create Team {% endblock %}
+
+{% block body %}
+  <body>
+    <div class="container panel">
+      <form class="form-horizontal container" id="team_form" action="/newteam" method="POST">
+        <fieldset>
+          <legend><h1>New Team</h1></legend>
+
+          <div class="form-group" id="username_entry">
+            <label for="username" class="control-label col-md-2 col-md-offset-1">Team Name</label>
+            <div class="col-md-6">
+              <input autocomplete="off" id="teamname" class="form-control" type="text" placeholder="Enter your team name" name="teamname" required>
+            </div>
+          </div>
+
+          <div class="form-group container">
+            <div class="col-sm-2 col-sm-offset-5">
+              <button class="form-control btn btn-default" type="submit" name="submit_button" id="submit_button">Submit</button>
+            </div>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+
+
+  <script type="text/javascript">
+
+    let teamname = document.querySelector("#teamname");
+
+    //Check form before submission is allowed
+    let button = document.getElementById("submit_button");
+    button.addEventListener("click", function(event){
+            event.preventDefault();
+            if (teamname.value == ""){
+                return false;
+            }
+            else {
+                document.getElementById('team_form').submit();
+            }
+        })
+
+  </script>
+
+{% endblock %}

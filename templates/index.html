@@ -1,14 +1,30 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-        <link rel="stylesheet" href="./static/style.css">
-        <title>Welcome</title>
-    </head>
-    <body>
-        <h1>Welcome</h1>
-        <p><a href="/register" >Register</a></p>
-    </body>
+{% extends "layout.html" %}
 
-</html>
+{% block title %}Welcome{% endblock %}
+
+{% block body %}
+<div class="col-lg-12">
+  <h1 class="text-center page-header">Hello {{ session.get('username')  }} </h1>
+</div>
+
+<div class="container">
+  <h3 class="text-center" style="padding: 15px;">Your teams</h3>
+  <div class="container col-md-6 col-md-offset-3">
+    <table class="table table-striped">
+      <thead>
+          <th>Team Name</th>
+          <th>Role</th>
+      </thead>
+      {% for team in userdata%}
+        <tr>
+          <td> {{ team[0] }} </td>
+          <td> {{ team[1] }} </td>
+        <tr>
+      {% endfor %}
+
+    </table>
+  </div>
+</div>
+
+
+{% endblock %}

@@ -1,0 +1,26 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ team }}{% endblock %}
+
+{% block body %}
+<h1 class="text-center page-header">{{ team }}</h1>
+
+<div class="container">
+  <h3 class="text-center" style="padding: 15px;">Team Members</h3>
+  <div class="container col-md-6 col-md-offset-3">
+    <table class="table table-striped">
+      <thead>
+          <th>Username</th>
+          <th>Role</th>
+      </thead>
+      {% for member in members%}
+        <tr>
+          <td> {{ member[0] }} </td>
+          <td> {{ member[1] }} </td>
+        <tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+{% endblock %}
