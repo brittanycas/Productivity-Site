@@ -1,0 +1,21 @@
+{% extends "layout.html" %}
+
+{% block title %}Welcome{% endblock %}
+
+{% block body %}
+
+<div id="calendar">
+
+<textarea name="input" rows="8" cols="80" id="input" hidden>{{calendar}}</textarea>
+</div>
+
+<script>
+  let calendar = document.getElementById("calendar");
+  let input = document.getElementById("input");
+  let string = input.value;
+  calendar.innerHTML = string;
+
+
+</script>
+
+{% endblock %}

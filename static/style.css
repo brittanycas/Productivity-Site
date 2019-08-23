@@ -11,6 +11,19 @@
  * Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)
  */
 /*! normalize.css v3.0.3 | MIT License | github.com/necolas/normalize.css */
+
+#calender{
+  padding: 15px;
+}
+.month{
+  padding: 5px;
+  text-align: center;
+  background-color: #104251;
+}
+.sun, .mon, .tue, .wed, .thu, .fri, .sat{
+  padding: 5px;
+}
+
 html {
   font-family: sans-serif;
   -ms-text-size-adjust: 100%;

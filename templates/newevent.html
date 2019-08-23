@@ -1,0 +1,74 @@
+{% extends "layout.html" %}
+
+{% block title %} New Event {% endblock %}
+
+{% block body %}
+  <body>
+    <div class="container panel">
+      <form class="form-horizontal container" id="event_form" action="/addevent" method="POST">
+        <fieldset>
+          <legend><h1>Add a new event</h1></legend>
+
+          <div class="form-group" id="event_title">
+            <label for="title" class="control-label col-md-2 col-md-offset-1">Name of Event</label>
+            <div class="col-md-6">
+              <input autocomplete="off" id="title" class="form-control" type="text" placeholder="Enter your event name" name="title" required>
+            </div>
+          </div>
+
+
+          <div class="form-group" id="description_entry">
+            <label for="details" class="control-label col-md-2 col-md-offset-1">Details</label>
+            <div class="col-md-6">
+              <input class="form-control" id="details" type="text" placeholder="Enter event details" name="details">
+            </div>
+          </div>
+
+          <div class="form-group" id="date_entry">
+            <label for="date" class="control-label col-md-2 col-md-offset-1">Date of Event</label>
+            <div class="col-md-6">
+              <input class="form-control" id="date" type="date" name="date" required>
+            </div>
+          </div>
+
+          <div class="form-group" id="time_entry">
+            <label for="time" class="control-label col-md-2 col-md-offset-1">Event Time</label>
+            <div class="col-md-6">
+              <input class="form-control" id="time" type="time" name="time" required>
+            </div>
+          </div>
+
+          <input type="text" name="team" value="{{team}}" hidden>
+
+          <div class="form-group container">
+            <div class="col-sm-2 col-sm-offset-5">
+              <button class="form-control btn btn-default" type="submit" name="submit_button" id="submit_button">Submit</button>
+            </div>
+          </div>
+        </fieldset>
+      </form>
+    </div>
+
+
+  <script type="text/javascript">
+
+    let title = document.querySelector("#title");
+    let date = document.querySelector("#date");
+    let time = document.querySelector("#time");
+
+
+    //Check form before submission is allowed
+    let button = document.getElementById("submit_button");
+    button.addEventListener("click", function(event){
+            event.preventDefault();
+            if (title.value == "" || date.value == "" || time.value == ""){
+                return false;
+            }
+            else {
+                document.getElementById('event_form').submit();
+            }
+        })
+
+  </script>
+
+{% endblock %}

@@ -1,12 +1,14 @@
 from flask import Flask, render_template, redirect, request, session, escape
 import sqlite3
+import calendar
+from datetime import datetime
 from passlib.hash import sha256_crypt
 from config import secret_key
 
 app = Flask(__name__)
 
 app.secret_key = secret_key
-
+calendar.setfirstweekday(calendar.SUNDAY)
 
 @app.route('/')
 def home():
@@ -177,10 +179,38 @@ def team():
             membername = c.fetchone()[0]
             memberslist.append([membername, member[2]])
 
+        # Load team events
+        events = []
+        c.execute("SELECT * FROM events WHERE teamid=?", (request.form.get('team_id'),))
+        allevents = c.fetchall()
+        for oneevent in allevents:
+            c.execute("SELECT username FROM users WHERE userid=?", (oneevent[2],))
+            usersname = c.fetchone()[0]
+            date = datetime.strptime(oneevent[5], "%Y-%m-%d")
+            time = datetime.strptime(oneevent[6], "%H:%M")
+            eventtime = date.strftime("%a %b %d %Y") + " at " + time.strftime("%I:%M %p")
+            events.append([oneevent[3], oneevent[4], eventtime, usersname])
         # Close database connection
         conn.commit()
         conn.close()
-        return render_template('team.html', team=teamdata, members=memberslist)
+
+        # Render calendar for next two months
+        today = datetime.today()
+        newcal = calendar.HTMLCalendar(firstweekday=6)
+        if today.month == 12:
+            next_month = 1
+            next_year = today.year + 1
+        else:
+            next_month = today.month + 1
+            next_year = today.year
+        currentmonthcal = newcal.formatmonth(today.year, today.month, withyear=True)
+        nextmonthcal = newcal.formatmonth(next_year, next_month, withyear=True)
+        thismonthid = str(today.month) + "-" + str(today.year)
+        nextmonthid = str(next_month) + "-" + str(next_year)
+        formatcal = "<div id="+ thismonthid + ">" + currentmonthcal +"</div>" + \
+                    "<div id="+ nextmonthid + ">" + nextmonthcal + "</div>"
+        active_months = [[today.month, today.year], [next_month, next_year]]
+        return render_template('team.html', team=teamdata, members=memberslist, events=events, calendar=formatcal, act=active_months)
     else:
         return render_template('index.html')
 
@@ -231,7 +261,42 @@ def leave():
         conn.close()
         return redirect('/')
     else:
-        redirect('/')
+        return redirect('/')
+
+
+@app.route('/newevent', methods=["GET", "POST"])
+def newevent():
+    if request.method == "POST":
+        return render_template("newevent.html", team=request.form.get('team'))
+    else:
+        return redirect('/')
+
+
+@app.route('/addevent', methods=["GET", "POST"])
+def addevent():
+    if request.method == "POST":
+        # Check for user input
+        if not request.form.get('title') or \
+                not request.form.get('date') or \
+                not request.form.get('time'):
+            return "please fully fill out event form"
+        else:
+            # Add event to the database
+            conn = sqlite3.connect('userdata.db')
+            c = conn.cursor()
+
+            c.execute("INSERT INTO events (teamid, userid, title, details, date, time, addedon) VALUES (?, ?, ?, ?, ?, ?, ?)",(
+                        request.form.get('team'), session.get('userid'),
+                        request.form.get('title'), request.form.get('details'),
+                        request.form.get('date'), request.form.get('time'),
+                        datetime.now(),))
+
+            # Close database connection
+            conn.commit()
+            conn.close()
+            return redirect('/')
+    else:
+        return redirect('/')
 
 
 if __name__ == '__main__':
