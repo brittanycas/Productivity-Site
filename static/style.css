@@ -17,11 +17,25 @@
 }
 .month{
   padding: 5px;
+  margin: 10px;
   text-align: center;
   background-color: #104251;
 }
 .sun, .mon, .tue, .wed, .thu, .fri, .sat{
   padding: 5px;
+}
+.event_active{
+  color: #6bc6e1;
+}
+td[data-title]:hover:after{
+  font-size: 12px;
+  content:attr(data-title);
+  position:absolute;
+  background:#061a20;
+  border:1px solid #def2f8;
+  color:#def2f8;
+  padding:2px 10px;
+  z-index:9999;
 }
 
 html {

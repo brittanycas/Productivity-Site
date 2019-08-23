@@ -5,9 +5,8 @@
 {% block body %}
 <h1 class="text-center page-header">{{ team[0] }}</h1>
 
-<div class="container">
+<div id="members" class="col-sm-5 col-sm-offset-3 container">
   <h3 class="text-center" style="padding: 15px;">Team Members</h3>
-  <div class="container col-md-6 col-md-offset-3">
     <table class="table table-striped">
       <thead>
           <th>Username</th>
@@ -20,12 +19,8 @@
         <tr>
       {% endfor %}
     </table>
-  </div>
-</div>
-
-<div class="container col-sm-6 col-sm-offset-3">
   <form class="container" action="/addmember" method="POST" id="newmember_form">
-    <div class="form-group col-sm-4 col-sm-offset-2">
+    <div class="form-group col-sm-4">
       <input type="text" name="team" value="{{team}}" hidden>
       <label class="control-label" for="newmember">Add a user to the team</label>
       <div class="input-group">
@@ -39,41 +34,42 @@
 </div>
 
 
-<div id="calendar">
+<div id="calendar" class="col-sm-2 col-lg-offset-1">
 
 </div>
 
-<div class="container">
-  <div class="container text-center col-sm-6 col-sm-offset-3">
-    <h3 class="text-center" style="padding: 15px;">Upcoming Events</h3>
-  </div>
-  <div class="container col-md-6 col-md-offset-3">
-    <table class="table table-striped">
-      <thead>
-          <th>Event</th>
-          <th>Details</th>
-          <th>Date/Time</th>
-          <th>Posted by</th>
-      </thead>
-      {% for event in events%}
-        <tr>
-          <td> {{ event[0] }} </td>
-          <td> {{ event[1] }} </td>
-          <td class="date"> {{ event[2] }} </td>
-          <td> {{ event[3] }} </td>
-        <tr>
-      {% endfor %}
-    </table>
-  </div>
+<div id="placeholder" class="col-sm-8">
 </div>
 
+<div class="container text-center col-sm-4">
+  <h3 class="text-center" style="padding: 15px;">Upcoming Events</h3>
+  <table class="table table-striped">
+    <thead>
+        <th>Event</th>
+        <th>Details</th>
+        <th>Date/Time</th>
+        <th>Posted by</th>
+    </thead>
+    {% for event in events%}
+      <tr class="eventrow">
+        <td class="eventtitle"> {{ event[0] }} </td>
+        <td> {{ event[1] }} </td>
+        <td class="date"> {{ event[2] }} </td>
+        <td> {{ event[3] }} </td>
+      <tr>
+    {% endfor %}
+  </table>
 
-<div class="container col-sm-4 col-sm-offset-8">
-  <form class="container" action="/newevent" method="POST" id="newevent_form">
+  <form action="/newevent" method="POST" id="newevent_form">
     <input type="text" name="team" value="{{team[1]}}" hidden>
     <input type="submit" name="add_event" class="btn btn-info" value="Add New Event">
   </form>
+
 </div>
+
+
+
+
 
 <!-- Hidden input to decode calendar text -->
 <textarea name="input" rows="8" cols="80" id="input" hidden>{{calendar}}</textarea>
@@ -99,6 +95,32 @@
   let input = document.getElementById("input");
   let string = input.value;
   calendar.innerHTML = string;
+
+  let active = {{act}}
+  let activerow = document.querySelectorAll(".eventrow");
+  let monthLookup = {
+    "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6,
+    "Jul": 7, "Aug": 8, "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12
+  }
+
+  for (let i=0; i<activerow.length; i++){
+    activityMonth = activerow[i].querySelector(".date").innerText.substr(4, 3);
+    activityYear = activerow[i].querySelector(".date").innerText.substr(11, 4);
+    activityDay = Number(activerow[i].querySelector(".date").innerText.substr(8, 2));
+    if ((monthLookup[activityMonth] == active[0][0] && activityYear == active[0][1]) ||
+        (monthLookup[activityMonth] == active[1][0] && activityYear == active[1][1])) {
+          elementId = monthLookup[activityMonth].toString() + "-" + activityYear
+          month = document.getElementById(elementId);
+          days = month.getElementsByTagName('td');
+          title = activerow[i].querySelector(".eventtitle").innerText
+          for(j=0; j<days.length; j++){
+            if(days[j].innerText == activityDay){
+              days[j].classList.add("event_active");
+              days[j].setAttribute("data-title", title)
+            }
+          }
+    }
+  }
 
 </script>
 
