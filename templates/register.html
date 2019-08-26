@@ -4,7 +4,23 @@
 
 {% block body %}
   <body>
-    <div class="container panel">
+    <div class="container">
+      <div id="registration_success" class="col-md-6 col-md-offset-3">
+        <div class="alert alert-success">
+          <strong>Success! </strong>You successfully created a new account. Please click <a href="/login" class="alert-link">here</a> to login.
+        </div>
+      </div>
+
+      <div id="registration_fail">
+        <div class="alert alert-danger alert-dismissable">
+          <button type="button" class="close" data-dismiss="alert">&times;</button>
+          <strong>Error! </strong><span id="error_message"></span>
+         </div>
+      </div>
+    </div>
+
+  <div class="container">
+    <div class="container panel" id="register_element">
       <form class="form-horizontal container" id="registration_form" action="/register" method="POST">
         <fieldset>
           <legend><h1>Registration</h1></legend>
@@ -35,7 +51,7 @@
           <div class="form-group" id="password_entry">
             <label for="password" class="control-label col-md-2 col-md-offset-1">Password</label>
             <div class="col-md-6">
-              <input class="form-control" id="password" type="password" placeholder="Choose a password" name="password" required>
+              <input class="form-control" id="password" type="password" placeholder="Choose a password" name="password" autocomplete="new-password" required>
             </div>
           </div>
 
@@ -56,9 +72,10 @@
       </form>
     </div>
 
-    <div>
+    <div id="login_link" class="col-md-12">
       <p class="text-center">If you already have an account click <a class="text-info" href="/login">here</a> to login</p>
     </div>
+  </div>
 
   <script type="text/javascript">
 
@@ -113,6 +130,17 @@
                 document.getElementById('registration_form').submit();
             }
         })
+
+      //After successful registration
+      if ({{success}}){
+        document.getElementById("register_element").style.display = 'none';
+        document.getElementById("login_link").style.display = 'none';
+        document.getElementById("registration_success").style.display = 'inline';
+      }
+      if({{fail}}){
+        document.getElementById("registration_fail").style.display = "block";
+        document.getElementById("error_message").innerHTML = "{{message}}";
+      }
 
   </script>
 

@@ -37,7 +37,7 @@ def home():
 @app.route('/register', methods=["GET", "POST"])
 def register():
     if request.method == "GET":
-        return render_template('register.html')
+        return render_template('register.html', success="false", fail="false")
     elif request.method == "POST":
         # Check for data in registration form
         if not request.form.get('name') or \
@@ -45,7 +45,8 @@ def register():
                 not request.form.get('email') or \
                 not request.form.get('password') or \
                 not request.form.get('confirm'):
-            return "please fully fill out registration"
+            message = "Please fully fill out registration form."
+            return render_template('register.html', message=message, success="false", fail="true")
         else:
             # Open connection to the database
             conn = sqlite3.connect('userdata.db')
@@ -59,11 +60,14 @@ def register():
             if len(existing_user) != 0:
                 conn.commit()
                 conn.close()
-                return "username is already in use"
+                message = "Sorry, that username is already in use."
+                return render_template('register.html', message=message, success="false", fail="true")
             if len(existing_email) != 0:
                 conn.commit()
                 conn.close()
-                return "email is already associated with an account"
+                message = "That email is already associated with an account. " \
+                          "If you have already registered please use the above link to login."
+                return render_template('register.html', message=message, success="false", fail="true")
             else:
                 hashed_pass = sha256_crypt.hash(request.form.get('password'))
                 # Add user to database
@@ -74,17 +78,18 @@ def register():
                 conn.commit()
                 conn.close()
 
-                return 'success'
+                return render_template('register.html', success="true", fail="false")
 
 
 @app.route('/login', methods=["GET", "POST"])
 def login():
     if request.method == "GET":
-        return render_template('login.html')
+        return render_template('login.html', fail="false")
     elif request.method == "POST":
         # Check for data in login form
         if not request.form.get('username') or not request.form.get('password'):
-            return "Please enter username and password to login"
+            message = "Please enter username and password to login"
+            return render_template('login.html', fail="true", message=message)
         else:
             # Open connection to the database
             conn = sqlite3.connect('userdata.db')
@@ -100,7 +105,8 @@ def login():
 
             # Check for valid username
             if len(existing_user) == 0:
-                return "Invalid user name"
+                message = "Invalid user name"
+                return render_template('login.html', fail="true", message=message)
             else:
                 # Check for valid password
                 if sha256_crypt.verify(request.form.get('password'), existing_user[0][4]):
@@ -109,7 +115,8 @@ def login():
                     session['userid'] = existing_user[0][0]
                     return redirect('/')
                 else:
-                    return "Invalid login credentials"
+                    message = "Invalid login credentials"
+                    return render_template('login.html', fail="true", message=message)
 
 
 @app.route('/logout')

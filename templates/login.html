@@ -4,6 +4,15 @@
 
 {% block body %}
   <body>
+    <div class="container">
+      <div id="login_fail">
+        <div class="alert alert-danger alert-dismissable">
+          <button type="button" class="close" data-dismiss="alert">&times;</button>
+          <strong>Error! </strong><span id="error_message"></span>
+         </div>
+      </div>
+    </div>
+
     <div class="container panel">
       <form class="form-horizontal container" id="login_form" action="/login" method="POST">
         <fieldset>
@@ -55,6 +64,10 @@
             }
         })
 
+    if({{fail}}){
+      document.getElementById("login_fail").style.display = "block";
+      document.getElementById("error_message").innerHTML = "{{message}}";
+    }
   </script>
 
 {% endblock %}

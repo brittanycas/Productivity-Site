@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ team[0] }}{% endblock %}
+
+{% block body %}
+<h1 class="text-center page-header">{{ team[0] }} - Admin</h1>
+
+<div id="members" class="col-sm-5 col-sm-offset-3 container">
+  <h3 class="text-center" style="padding: 15px;">Team Members</h3>
+  <table class="table table-striped">
+    <thead>
+        <th>Username</th>
+        <th>Role</th>
+    </thead>
+    {% for member in members%}
+      <tr>
+        <td> {{ member[0] }} </td>
+        <td>
+          <select class="form-control role" name="role" id="{{ member[1] }}">
+            <option value="None">None Set</option>
+            <option value="Leader">Leader</option>
+            <option value="Member">Member</option>
+            <option value="Assistant">Assistant</option>
+          </select>
+        </td>
+      <tr>
+    {% endfor %}
+  </table>
+</div>
+
+<div class="container text-center col-sm-4">
+  <h3 class="text-center" style="padding: 15px;">Upcoming Events</h3>
+  <table class="table table-striped">
+    <thead>
+        <th>Event</th>
+        <th>Details</th>
+        <th>Date/Time</th>
+        <th>Posted by</th>
+    </thead>
+    {% for event in events%}
+      <tr class="eventrow">
+        <td class="eventtitle"> {{ event[0] }} </td>
+        <td> {{ event[1] }} </td>
+        <td class="date"> {{ event[2] }} </td>
+        <td> {{ event[3] }} </td>
+      <tr>
+    {% endfor %}
+  </table>
+</div>
+
+
+
+  <script type="text/javascript">
+    let memberroles = document.querySelectorAll(".role")
+    console.log(memberroles)
+
+  </script>
+
+{% endblock %}
