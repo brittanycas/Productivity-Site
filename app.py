@@ -242,21 +242,32 @@ def addmember():
             c.execute("SELECT userid FROM users WHERE username=?", (request.form.get('newmember'),))
             memberid = c.fetchone()
 
+            # Load team information
+            teamdata = request.form.get('team')
+            teamid = teamdata.replace("'", "").strip('[]').split(',')
+
             # Check that the submitted username was valid
             if not memberid:
                 conn.commit()
                 conn.close()
-                return "User does not exist"
+                message = request.form.get('newmember') + " is not a valid username"
+                return render_template('timed_redirect.html', message=message, team_id=teamid[1])
             else:
-                #Add user to team
-                teamdata = request.form.get('team')
-                teamid = teamdata.replace("'", "").strip('[]').split(',')
-                c.execute("INSERT INTO user_team (userid, teamid) VALUES (?,?)", (memberid[0], teamid[1]))
-                conn.commit()
-                conn.close()
-                return "User has been added"
-
-
+                # Check if user is already a member of the team
+                c.execute("SELECT * FROM user_team WHERE userid=? AND teamid=?",(memberid[0], teamid[1]))
+                inteam = c.fetchone()
+                if not inteam:
+                    # Add user to team
+                    c.execute("INSERT INTO user_team (userid, teamid) VALUES (?,?)", (memberid[0], teamid[1]))
+                    conn.commit()
+                    conn.close()
+                    message = request.form.get('newmember') + " has been added to the team."
+                    return render_template('timed_redirect.html', message=message, team_id=teamid[1])
+                else:
+                    conn.commit()
+                    conn.close()
+                    message = request.form.get('newmember') + " is already a member of the team."
+                    return render_template('timed_redirect.html', message=message, team_id=teamid[1])
     else:
         return redirect('/')
 
