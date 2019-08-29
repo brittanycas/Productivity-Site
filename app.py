@@ -1,28 +1,29 @@
 from flask import Flask, render_template, redirect, request, session, url_for
-import sqlite3
+import mysql.connector as mysql
 import calendar
 from datetime import datetime
 from passlib.hash import sha256_crypt
-from config import secret_key
+from config import secret_key, db
 
 app = Flask(__name__)
 
 app.secret_key = secret_key
 calendar.setfirstweekday(calendar.SUNDAY)
 
+
 @app.route('/')
 def home():
     if session.get('logged_in'):
         userdata = []
         # Open connection to the database
-        conn = sqlite3.connect('userdata.db')
+        conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
         c = conn.cursor()
 
         # Load user data
-        c.execute("SELECT * FROM user_team WHERE userid=?", (session.get('userid'),))
+        c.execute("SELECT * FROM user_team WHERE userid=%s", (session.get('userid'),))
         userteams = c.fetchall()
         for team in userteams:
-            c.execute("SELECT teamname FROM teams WHERE teamid=?", (team[1],))
+            c.execute("SELECT teamname FROM teams WHERE teamid=%s", (team[1],))
             teamname = c.fetchone()
             userdata.append([teamname[0], team[2], team[1]])
 
@@ -49,13 +50,13 @@ def register():
             return render_template('register.html', message=message, success="false", fail="true")
         else:
             # Open connection to the database
-            conn = sqlite3.connect('userdata.db')
+            conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
             c = conn.cursor()
 
             # Check for existing users
-            c.execute("SELECT * FROM users WHERE username=?", (request.form.get('username'),))
+            c.execute("SELECT * FROM users WHERE username=%s", (request.form.get('username'),))
             existing_user = c.fetchall()
-            c.execute("SELECT * FROM users WHERE email=?", (request.form.get('email'),))
+            c.execute("SELECT * FROM users WHERE email=%s", (request.form.get('email'),))
             existing_email = c.fetchall()
             if len(existing_user) != 0:
                 conn.commit()
@@ -72,8 +73,8 @@ def register():
                 hashed_pass = sha256_crypt.hash(request.form.get('password'))
                 # Add user to database
                 c.execute("""INSERT INTO users (username, name, email, hash)
-                            VALUES (?, ?, ?, ?)""", (request.form.get('username'), request.form.get('name'),
-                                                     request.form.get('email'), hashed_pass,))
+                            VALUES (%s, %s, %s, %s)""", (request.form.get('username'), request.form.get('name'),
+                                                         request.form.get('email'), hashed_pass,))
                 # Close database connection
                 conn.commit()
                 conn.close()
@@ -92,11 +93,11 @@ def login():
             return render_template('login.html', fail="true", message=message)
         else:
             # Open connection to the database
-            conn = sqlite3.connect('userdata.db')
+            conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
             c = conn.cursor()
 
             # Check for existing users
-            c.execute("SELECT * FROM users WHERE username=?", (request.form.get('username'),))
+            c.execute("SELECT * FROM users WHERE username=%s", (request.form.get('username'),))
             existing_user = c.fetchall()
 
             # Close database connection
@@ -139,18 +140,19 @@ def createteam():
             else:
                 # Open connection to the database
                 new_team = request.form.get('teamname')
-                conn = sqlite3.connect('userdata.db')
+                conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
                 c = conn.cursor()
 
                 # Check for existing users
-                c.execute("SELECT * FROM teams WHERE teamname=?", (new_team,))
+                c.execute("SELECT * FROM teams WHERE teamname=%s", (new_team,))
                 existing_team = c.fetchall()
 
                 if len(existing_team) == 0:
-                    c.execute("INSERT INTO teams (teamname) VALUES (?)", (new_team,))
-                    c.execute("SELECT teamid FROM teams WHERE teamname=?", (new_team,))
+                    c.execute("INSERT INTO teams (teamname) VALUES (%s)", (new_team,))
+                    c.execute("SELECT teamid FROM teams WHERE teamname=%s", (new_team,))
                     new_teamid = c.fetchone()
-                    c.execute("INSERT INTO user_team (userid, teamid) VALUES (?, ?)",(session.get('userid'), new_teamid[0],))
+                    c.execute("INSERT INTO user_team (userid, teamid) VALUES (%s, %s)",
+                              (session.get('userid'), new_teamid[0],))
 
                     # Close database connection
                     conn.commit()
@@ -175,33 +177,33 @@ def team():
             return redirect('/')
         else:
             # Open connection to the database
-            conn = sqlite3.connect('userdata.db')
+            conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
             c = conn.cursor()
 
             # Load team name
-            c.execute("SELECT teamname FROM teams WHERE teamid=?", (team_id,))
+            c.execute("SELECT teamname FROM teams WHERE teamid=%s", (team_id,))
             teamname = c.fetchone()[0]
             teamdata.append(teamname)
             teamdata.append(request.form.get('team_id'))
 
             # Load team members
             memberslist = []
-            c.execute("SELECT * FROM user_team WHERE teamid=?", (team_id,))
+            c.execute("SELECT * FROM user_team WHERE teamid=%s", (team_id,))
             members = c.fetchall()
             for member in members:
-                c.execute("SELECT username FROM users WHERE userid=?", (member[0],))
+                c.execute("SELECT username FROM users WHERE userid=%s", (member[0],))
                 membername = c.fetchone()[0]
                 memberslist.append([membername, member[2]])
 
             # Load team events
             events = []
-            c.execute("SELECT * FROM events WHERE teamid=?", (team_id,))
+            c.execute("SELECT * FROM events WHERE teamid=%s", (team_id,))
             allevents = c.fetchall()
             for oneevent in allevents:
-                c.execute("SELECT username FROM users WHERE userid=?", (oneevent[2],))
+                c.execute("SELECT username FROM users WHERE userid=%s", (oneevent[2],))
                 usersname = c.fetchone()[0]
-                date = datetime.strptime(oneevent[5], "%Y-%m-%d")
-                time = datetime.strptime(oneevent[6], "%H:%M")
+                date = oneevent[5]
+                time = (datetime.min + (oneevent[6])).time()
                 eventtime = date.strftime("%a %b %d %Y") + " at " + time.strftime("%I:%M %p")
                 events.append([oneevent[3], oneevent[4], eventtime, usersname])
             # Close database connection
@@ -221,12 +223,14 @@ def team():
             nextmonthcal = newcal.formatmonth(next_year, next_month, withyear=True)
             thismonthid = str(today.month) + "-" + str(today.year)
             nextmonthid = str(next_month) + "-" + str(next_year)
-            formatcal = "<div id="+ thismonthid + ">" + currentmonthcal +"</div>" + \
-                        "<div id="+ nextmonthid + ">" + nextmonthcal + "</div>"
+            formatcal = "<div id=" + thismonthid + ">" + currentmonthcal + "</div>" + \
+                        "<div id=" + nextmonthid + ">" + nextmonthcal + "</div>"
             active_months = [[today.month, today.year], [next_month, next_year]]
-            return render_template('team.html', team=teamdata, members=memberslist, events=events, calendar=formatcal, act=active_months)
+            return render_template('team.html', team=teamdata, members=memberslist, events=events, calendar=formatcal,
+                                   act=active_months)
     else:
         return redirect('/')
+
 
 @app.route('/addmember', methods=["GET", "POST"])
 def addmember():
@@ -235,11 +239,11 @@ def addmember():
             return redirect('/')
         else:
             # Open database connection
-            conn = sqlite3.connect('userdata.db')
+            conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
             c = conn.cursor()
 
             # Find user id for new member
-            c.execute("SELECT userid FROM users WHERE username=?", (request.form.get('newmember'),))
+            c.execute("SELECT userid FROM users WHERE username=%s", (request.form.get('newmember'),))
             memberid = c.fetchone()
 
             # Load team information
@@ -254,11 +258,11 @@ def addmember():
                 return render_template('timed_redirect.html', message=message, team_id=teamid[1])
             else:
                 # Check if user is already a member of the team
-                c.execute("SELECT * FROM user_team WHERE userid=? AND teamid=?",(memberid[0], teamid[1]))
+                c.execute("SELECT * FROM user_team WHERE userid=%s AND teamid=%s", (memberid[0], teamid[1]))
                 inteam = c.fetchone()
                 if not inteam:
                     # Add user to team
-                    c.execute("INSERT INTO user_team (userid, teamid) VALUES (?,?)", (memberid[0], teamid[1]))
+                    c.execute("INSERT INTO user_team (userid, teamid) VALUES (%s,%s)", (memberid[0], teamid[1]))
                     conn.commit()
                     conn.close()
                     message = request.form.get('newmember') + " has been added to the team."
@@ -275,11 +279,12 @@ def addmember():
 @app.route('/leave', methods=["GET", "POST"])
 def leave():
     if request.method == "POST":
-        conn = sqlite3.connect('userdata.db')
+        conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
         c = conn.cursor()
 
         # Remove user from team
-        c.execute("DELETE FROM user_team WHERE userid=? AND teamid=?", (session.get('userid'), (request.form.get('team_id')),))
+        c.execute("DELETE FROM user_team WHERE userid=%s AND teamid=%s",
+                  (session.get('userid'), (request.form.get('team_id')),))
 
         # Close database connection
         conn.commit()
@@ -304,22 +309,25 @@ def addevent():
         if not request.form.get('title') or \
                 not request.form.get('date') or \
                 not request.form.get('time'):
-            return "please fully fill out event form"
+            message = "Please fully completed event form"
+            return render_template('timed_redirect.html', message=message, team_id=request.form.get('team'))
         else:
             # Add event to the database
-            conn = sqlite3.connect('userdata.db')
+            conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
             c = conn.cursor()
-
-            c.execute("INSERT INTO events (teamid, userid, title, details, date, time, addedon) VALUES (?, ?, ?, ?, ?, ?, ?)",(
-                        request.form.get('team'), session.get('userid'),
-                        request.form.get('title'), request.form.get('details'),
-                        request.form.get('date'), request.form.get('time'),
-                        datetime.now(),))
+            data = (
+                request.form.get('team'), str(session.get('userid')),
+                request.form.get('title'), request.form.get('details'),
+                request.form.get('date'), request.form.get('time')
+            )
+            c.execute(
+                "INSERT INTO events (teamid, userid, title, details, `date`, `time`) VALUES (%s, %s, %s, %s, %s, %s)",
+                data)
 
             # Close database connection
             conn.commit()
             conn.close()
-            print(request.form.get('team'))
+
             return redirect(url_for('team', team_id_form=request.form.get('team')), code=307)
     else:
         return redirect('/')
