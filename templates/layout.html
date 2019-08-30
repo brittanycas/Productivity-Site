@@ -28,12 +28,14 @@
         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
           <ul class="nav navbar-nav">
           {% for team in userdata%}
-            <li>
-              <form method="POST" action="/team">
-                <input type="hidden" name="team_id" value="{{ team[2] }}">
-                <button type="submit" name="submit_param" value="submit_value" class="btn btn-default" style="padding: 15px;"> {{ team[0] }} </button>
-              </form>
-            </li>
+            {% if team[3]%}
+              <li>
+                <form method="POST" action="/team">
+                  <input type="hidden" name="team_id" value="{{ team[2] }}">
+                  <button type="submit" name="submit_param" value="submit_value" class="btn btn-default" style="padding: 15px;"> {{ team[0] }} </button>
+                </form>
+              </li>
+              {% endif %}
             {% endfor %}
           </ul>
           <ul class="nav navbar-nav navbar-right">

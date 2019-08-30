@@ -22,15 +22,19 @@ def home():
         # Load user data
         c.execute("SELECT * FROM user_team WHERE userid=%s", (session.get('userid'),))
         userteams = c.fetchall()
-        for team in userteams:
-            c.execute("SELECT teamname FROM teams WHERE teamid=%s", (team[1],))
-            teamname = c.fetchone()
-            userdata.append([teamname[0], team[2], team[1]])
+        if not userteams:
+            noteam = "true"
+        else:
+            for team in userteams:
+                c.execute("SELECT teamname FROM teams WHERE teamid=%s", (team[1],))
+                teamname = c.fetchone()
+                userdata.append([teamname[0], team[2], team[1], team[4]])
+            noteam = "false"
 
         # Close database connection
         conn.commit()
         conn.close()
-        return render_template('index.html', userdata=userdata)
+        return render_template('index.html', userdata=userdata, noteam=noteam)
     else:
         return render_template('landing.html')
 
@@ -188,7 +192,7 @@ def team():
 
             # Load team members
             memberslist = []
-            c.execute("SELECT * FROM user_team WHERE teamid=%s", (team_id,))
+            c.execute("SELECT * FROM user_team WHERE teamid=%s AND accept=%s", (team_id, "true"),)
             members = c.fetchall()
             for member in members:
                 c.execute("SELECT username FROM users WHERE userid=%s", (member[0],))
@@ -262,10 +266,10 @@ def addmember():
                 inteam = c.fetchone()
                 if not inteam:
                     # Add user to team
-                    c.execute("INSERT INTO user_team (userid, teamid) VALUES (%s,%s)", (memberid[0], teamid[1]))
+                    c.execute("INSERT INTO user_team (userid, teamid, accept) VALUES (%s,%s,%s)", (memberid[0], teamid[1], 'false'))
                     conn.commit()
                     conn.close()
-                    message = request.form.get('newmember') + " has been added to the team."
+                    message = request.form.get('newmember') + " has been sent an invite to the team."
                     return render_template('timed_redirect.html', message=message, team_id=teamid[1])
                 else:
                     conn.commit()
@@ -275,6 +279,24 @@ def addmember():
     else:
         return redirect('/')
 
+
+@app.route('/join', methods=["GET", "POST"])
+def join():
+    if request.method == "POST":
+        conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
+        c = conn.cursor()
+
+        # Remove user from team
+        c.execute("UPDATE user_team SET accept = true WHERE userid=%s AND teamid=%s",
+                  (session.get('userid'), (request.form.get('team_id')),))
+
+        # Close database connection
+        conn.commit()
+        conn.close()
+        return redirect('/')
+
+    else:
+        redirect('/')
 
 @app.route('/leave', methods=["GET", "POST"])
 def leave():

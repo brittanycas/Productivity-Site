@@ -16,24 +16,74 @@
           <th class="col-md-2 text-center">Role</th>
           <th class="col-md-2 text-center">Leave the Team?</th>
       </thead>
-      {% for team in userdata%}
-        <tr class="text-center">
-          <td> {{ team[0] }} </td>
-          <td> {{ team[1] }} </td>
-          <td>
-            <form method="POST" action="/leave" id="{{ team[0] }}">
-            <input type="hidden" name="team_id" value="{{ team[2] }}">
-            <input type="submit" name="{{ team[0] }}" class="btn btn-default" value="Leave" onclick="event.preventDefault(); myalert(this)">
-            </form>
-          </td>
-        <tr>
+        {% for team in userdata%}
+          {% if team[3] %}
+          <tr class="text-center">
+            <td>
+              <form method="POST" action="/team" id="{{ team[0] }}">
+              <input type="hidden" name="team_id" value="{{ team[2] }}">
+              <input type="submit" name="{{ team[0] }}" class="btn btn-link" value="{{ team[0] }}">
+              </form>
+            </td>
+            <td> {{ team[1] }} </td>
+            <td>
+              <form method="POST" action="/leave" id="{{ team[0] }}">
+              <input type="hidden" name="team_id" value="{{ team[2] }}">
+              <input type="submit" name="{{ team[0] }}" class="btn btn-default" value="Leave" onclick="event.preventDefault(); myalert(this)">
+              </form>
+            </td>
+          <tr>
+          {% endif %}
       {% endfor %}
+    </table>
+    <div class="col-md-6 col-md-offset-3 text-info" id="noteam"> </div>
+  </div>
+</div>
 
+<div class="container">
+  <h3 class="text-center" style="padding-bottom: 15px;">Your team invites</h3>
+  <div class="container col-md-6 col-md-offset-3">
+    <table class="table table-striped">
+      <thead>
+          <th class="col-md-4 text-center">Team Name</th>
+          <th class="col-md-1 text-center">Join?</th>
+          <th class="col-md-1 text-center">Decline?</th>
+      </thead>
+        {% for team in userdata%}
+          {% if not team[3] %}
+          <tr class="text-center">
+            <td>
+              <form method="POST" action="/team" id="{{ team[0] }}">
+              <input type="hidden" name="team_id" value="{{ team[2] }}">
+              <input type="submit" name="{{ team[0] }}" class="btn btn-link" value="{{ team[0] }}">
+              </form>
+            </td>
+            <td>
+              <form method="POST" action="/join" id="{{ team[0] }}">
+                <input type="hidden" name="team_id" value="{{ team[2] }}">
+                <input  type="submit" name="{{ team[0] }}" class="btn btn-default text-success" value="Join">
+              </form>
+            </td>
+            <td>
+              <form method="POST" action="/leave" id="{{ team[0] }}">
+                <input type="hidden" name="team_id" value="{{ team[2] }}">
+                <input type="submit" name="{{ team[0] }}" class="btn btn-default text-danger" value="Decline">
+              </form>
+            </td>
+          <tr>
+        {% endif %}
+      {% endfor %}
     </table>
   </div>
 </div>
 
   <script type="text/javascript">
+    // No teams joined
+    if ({{noteam}}){
+      noteam_el = document.getElementById("noteam");
+      noteam_el.innerHTML = "You are not currently a member of any teams. Request an invite or create a new team using the button above."
+      noteam_el.style.display = "block"
+    }
 
     //Confirm before removing from team
     function myalert(e){
