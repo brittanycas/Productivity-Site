@@ -51,20 +51,36 @@
 
 
   <script type="text/javascript">
-
+    // Get the required elements
     let title = document.querySelector("#title");
     let date = document.querySelector("#date");
     let time = document.querySelector("#time");
 
+    // Get today's date
+    today = new Date();
+    dd = today.getDate().toString();
+    mm = today.getMonth() + 1;
+    mm = (mm < 10) ? "0" + mm.toString() : mm.toString();
+    yyyy = today.getFullYear().toString();
+    todayform = yyyy + "-" + mm + "-" + dd;
 
-    //Check form before submission is allowed
+    // New date without time for form validation below
+    todaystrip = new Date(todayform);
+
+    // Prevent new events with past dates
+    date.min = todayform;
+
+    // Check form before submission is allowed
     let button = document.getElementById("submit_button");
     button.addEventListener("click", function(event){
             event.preventDefault();
+            enteredDate = new Date(date.value)
             if (title.value == "" || date.value == "" || time.value == ""){
                 return false;
-            }
-            else {
+            } if (enteredDate < todaystrip){
+                document.getElementById("date_entry").classList.add("has-error");
+                return false;
+            } else {
                 document.getElementById('event_form').submit();
             }
         })

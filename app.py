@@ -324,6 +324,18 @@ def addevent():
                 "INSERT INTO events (teamid, userid, title, details, `date`, `time`) VALUES (%s, %s, %s, %s, %s, %s)",
                 data)
 
+            # Clear out old events from the database
+            today = datetime.today()
+            if today.month == 1:
+                last_month = 12
+                last_year = today.year - 1
+            else:
+                last_month = today.month + 1
+                last_year = today.year
+            old_date_start = str(last_year) + "-" + str(last_month) + "-01"
+            old_date_end = str(last_year) + "-" + str(last_month) + "-31"
+            c.execute("DELETE FROM events WHERE date between %s AND %s", (old_date_start, old_date_end,))
+
             # Close database connection
             conn.commit()
             conn.close()
