@@ -155,8 +155,8 @@ def createteam():
                     c.execute("INSERT INTO teams (teamname) VALUES (%s)", (new_team,))
                     c.execute("SELECT teamid FROM teams WHERE teamname=%s", (new_team,))
                     new_teamid = c.fetchone()
-                    c.execute("INSERT INTO user_team (userid, teamid) VALUES (%s, %s)",
-                              (session.get('userid'), new_teamid[0],))
+                    c.execute("INSERT INTO user_team (userid, teamid, accept) VALUES (%s, %s, %s)",
+                              (session.get('userid'), new_teamid[0], True))
 
                     # Close database connection
                     conn.commit()
@@ -192,7 +192,7 @@ def team():
 
             # Load team members
             memberslist = []
-            c.execute("SELECT * FROM user_team WHERE teamid=%s AND accept=%s", (team_id, "true"),)
+            c.execute("SELECT * FROM user_team WHERE teamid=%s AND accept=%s", (team_id, True),)
             members = c.fetchall()
             for member in members:
                 c.execute("SELECT username FROM users WHERE userid=%s", (member[0],))
@@ -266,7 +266,7 @@ def addmember():
                 inteam = c.fetchone()
                 if not inteam:
                     # Add user to team
-                    c.execute("INSERT INTO user_team (userid, teamid, accept) VALUES (%s,%s,%s)", (memberid[0], teamid[1], 'false'))
+                    c.execute("INSERT INTO user_team (userid, teamid, accept) VALUES (%s,%s,%s)", (memberid[0], teamid[1], False))
                     conn.commit()
                     conn.close()
                     message = request.form.get('newmember') + " has been sent an invite to the team."
@@ -363,6 +363,59 @@ def addevent():
             conn.close()
 
             return redirect(url_for('team', team_id_form=request.form.get('team')), code=307)
+    else:
+        return redirect('/')
+
+
+@app.route('/mail', methods=["GET", "POST"])
+def sendmail():
+    if request.method == "POST":
+        # Get all team accepted team members emails
+        conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
+        c = conn.cursor()
+        c.execute("SELECT teamname FROM teams WHERE teamid=%s", (request.form.get('teamid'),))
+        teamname = c.fetchone()[0]
+        c.execute("SELECT userid FROM user_team WHERE teamid=%s", (request.form.get('teamid'),))
+        members = c.fetchall()
+        emails = []
+        for member in members:
+            c.execute("SELECT email FROM users WHERE userid=%s", (member))
+            email = c.fetchone()[0]
+            emails.append(email)
+
+        # Get input from form
+        data = (request.form.get('teamid'), session.get('userid'), request.form.get('subject'), request.form.get('body'))
+
+        # Send message
+        c.execute("INSERT INTO messages (teamid, userid, subject, message) VALUES (%s, %s, %s, %s)", data)
+        conn.commit()
+        conn.close()
+
+        return redirect(url_for('team', team_id_form=request.form.get('teamid')), code=307)
+
+    else:
+        redirect('/')
+
+
+@app.route('/inbox', methods=["GET", "POST"])
+def inbox():
+    if session.get('logged_in'):
+        messages = []
+        conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
+        c = conn.cursor()
+        c.execute("SELECT teamid FROM user_team WHERE userid=%s", (session.get('userid'),))
+        teams = c.fetchall()[0]
+        for team in teams:
+            c.execute("SELECT teamname FROM teams WHERE teamid=%s", (team,))
+            teamname = c.fetchone()[0]
+            c.execute("SELECT userid, subject, message, sent FROM messages WHERE teamid=%s", (team,))
+            allmessage = c.fetchall()
+            for eachmessage in allmessage:
+                c.execute("SELECT username FROM users WHERE userid=%s", (eachmessage[0],))
+                user_sent = c.fetchone()[0]
+                sent = eachmessage[3].strftime("%I:%M %p") + " on " + eachmessage[3].strftime("%m/%d/%y")
+                messages.append([teamname, user_sent, eachmessage[1], eachmessage[2], sent])
+        return render_template('/inbox.html', messages=messages)
     else:
         return redirect('/')
 

@@ -40,6 +40,7 @@
           </ul>
           <ul class="nav navbar-nav navbar-right">
             {% if session.get('logged_in') %}
+                <li><a href="/inbox">Inbox</a></li>
                 <li><a href="/newteam">Create a team</a></li>
                 <li><a href="/logout">Logout</a></li>
             {% else %}
