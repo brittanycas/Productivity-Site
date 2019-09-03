@@ -332,7 +332,13 @@ def leave():
 @app.route('/newevent', methods=["GET", "POST"])
 def newevent():
     if request.method == "POST":
-        return render_template("newevent.html", team=request.form.get('team'))
+        if request.form.get('team_id'):
+            team_id = request.form.get('team_id')
+        else:
+            team_id = request.args.get('team_id_form')
+        if not team_id:
+            return redirect('/')
+        return render_template("newevent.html", team=team_id)
     else:
         return redirect('/')
 
@@ -340,18 +346,24 @@ def newevent():
 @app.route('/addevent', methods=["GET", "POST"])
 def addevent():
     if request.method == "POST":
+        if request.form.get('team_id'):
+            team_id = request.form.get('team_id')
+        else:
+            team_id = request.args.get('team_id_form')
+        if not team_id:
+            return redirect('/')
         # Check for user input
         if not request.form.get('title') or \
                 not request.form.get('date') or \
                 not request.form.get('time'):
             message = "Please fully completed event form"
-            return render_template('timed_redirect.html', message=message, team_id=request.form.get('team'))
+            return render_template('timed_redirect.html', message=message, team_id=team_id)
         else:
             # Add event to the database
             conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
             c = conn.cursor()
             data = (
-                request.form.get('team'), str(session.get('userid')),
+                team_id, str(session.get('userid')),
                 request.form.get('title'), request.form.get('details'),
                 request.form.get('date'), request.form.get('time')
             )
@@ -365,7 +377,7 @@ def addevent():
                 last_month = 12
                 last_year = today.year - 1
             else:
-                last_month = today.month + 1
+                last_month = today.month - 1
                 last_year = today.year
             old_date_start = str(last_year) + "-" + str(last_month) + "-01"
             old_date_end = str(last_year) + "-" + str(last_month) + "-31"
@@ -375,7 +387,7 @@ def addevent():
             conn.commit()
             conn.close()
 
-            return redirect(url_for('team', team_id_form=request.form.get('team')), code=307)
+            return redirect(url_for('team', team_id_form=team_id), code=307)
     else:
         return redirect('/')
 
@@ -410,7 +422,7 @@ def sendmail():
         conn.commit()
         conn.close()
 
-        return redirect(url_for('team', team_id_form=request.form.get('teamid')), code=307)
+        return redirect(url_for('team', team_id_form=team_id), code=307)
 
     else:
         redirect('/')
