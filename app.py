@@ -210,9 +210,7 @@ def team():
                 time = (datetime.min + (oneevent[6])).time()
                 eventtime = date.strftime("%a %b %d %Y") + " at " + time.strftime("%I:%M %p")
                 events.append([oneevent[3], oneevent[4], eventtime, usersname])
-            # Close database connection
-            conn.commit()
-            conn.close()
+
 
             # Render calendar for next two months
             today = datetime.today()
@@ -230,8 +228,23 @@ def team():
             formatcal = "<div id=" + thismonthid + ">" + currentmonthcal + "</div>" + \
                         "<div id=" + nextmonthid + ">" + nextmonthcal + "</div>"
             active_months = [[today.month, today.year], [next_month, next_year]]
+
+            # Gather messages
+            messages = []
+            c.execute("SELECT userid, subject, message, sent FROM messages WHERE teamid=%s", (team_id,))
+            allmessage = c.fetchall()
+            for eachmessage in allmessage:
+                c.execute("SELECT username FROM users WHERE userid=%s", (eachmessage[0],))
+                user_sent = c.fetchone()[0]
+                sent = eachmessage[3].strftime("%I:%M %p") + " on " + eachmessage[3].strftime("%m/%d/%y")
+                messages.append([user_sent, eachmessage[1], eachmessage[2], sent])
+
+            # Close database connection
+            conn.commit()
+            conn.close()
+
             return render_template('team.html', team=teamdata, members=memberslist, events=events, calendar=formatcal,
-                                   act=active_months)
+                                   act=active_months, messages=messages)
     else:
         return redirect('/')
 
@@ -370,12 +383,18 @@ def addevent():
 @app.route('/mail', methods=["GET", "POST"])
 def sendmail():
     if request.method == "POST":
+        if request.form.get('team_id'):
+            team_id = request.form.get('team_id')
+        else:
+            team_id = request.args.get('team_id_form')
+        if not team_id:
+            return redirect('/')
         # Get all team accepted team members emails
         conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
         c = conn.cursor()
-        c.execute("SELECT teamname FROM teams WHERE teamid=%s", (request.form.get('teamid'),))
+        c.execute("SELECT teamname FROM teams WHERE teamid=%s", (team_id,))
         teamname = c.fetchone()[0]
-        c.execute("SELECT userid FROM user_team WHERE teamid=%s", (request.form.get('teamid'),))
+        c.execute("SELECT userid FROM user_team WHERE teamid=%s", (team_id,))
         members = c.fetchall()
         emails = []
         for member in members:
@@ -384,7 +403,7 @@ def sendmail():
             emails.append(email)
 
         # Get input from form
-        data = (request.form.get('teamid'), session.get('userid'), request.form.get('subject'), request.form.get('body'))
+        data = (team_id, session.get('userid'), request.form.get('subject'), request.form.get('body'))
 
         # Send message
         c.execute("INSERT INTO messages (teamid, userid, subject, message) VALUES (%s, %s, %s, %s)", data)
@@ -415,6 +434,8 @@ def inbox():
                 user_sent = c.fetchone()[0]
                 sent = eachmessage[3].strftime("%I:%M %p") + " on " + eachmessage[3].strftime("%m/%d/%y")
                 messages.append([teamname, user_sent, eachmessage[1], eachmessage[2], sent])
+        conn.commit()
+        conn.close()
         return render_template('/inbox.html', messages=messages)
     else:
         return redirect('/')
