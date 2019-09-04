@@ -6,20 +6,28 @@
 
 <div class="text-center">
   <h1>{{message}}</h1>
-  <p>You will be redirected back to your team page in 3 seconds.
+  <p>You will be redirected in 3 seconds.
 </div>
 
+{% if team_id != "false" %}
 <div hidden>
   <form id="hidden_form" method="POST" action="/team">
     <input name="team_id" type="text" value={{team_id}}>
     <button type=submit id="hidden_submit">
   </form>
 </div>
+{% endif %}
 
   <script>
-    window.setTimeout(function(){
-      document.getElementById('hidden_form').submit();
-    }, 3000)
+    if ({{team_id}} != false){
+      window.setTimeout(function(){
+        document.getElementById('hidden_form').submit();
+      }, 3000)
+    } else {
+      window.setTimeout(function(){
+        window.location.href="/newteam"
+      }, 3000)
+    }
   </script>
 
 {% endblock %}

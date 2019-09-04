@@ -50,41 +50,36 @@
   </div>
 </div>
 
+<!-- Events -->
+<div class="col-md-4">
+  <div id="calendar" class="col-lg-offset-4 col-sm-offset-4"></div>
 
-<div id="calendar" class="col-md-2 col-lg-offset-1 col-sm-offset-4">
-
+  <div class="container text-center col-md-12">
+    <h3 class="text-center" style="padding: 15px;">Upcoming Events</h3>
+    <table class="table table-striped">
+      <thead>
+          <th>Event</th>
+          <th>Details</th>
+          <th>Date/Time</th>
+          <th>Posted by</th>
+      </thead>
+      {% for event in events%}
+        <tr class="eventrow">
+          <td class="eventtitle"> {{ event[0] }} </td>
+          <td> {{ event[1] }} </td>
+          <td class="date"> {{ event[2] }} </td>
+          <td> {{ event[3] }} </td>
+        <tr>
+      {% endfor %}
+    </table>
+    <form action="/newevent" method="POST" id="newevent_form">
+      <input type="text" name="team_id" value="{{team[1]}}" hidden>
+      <input type="submit" name="add_event" class="btn btn-info" value="Add New Event">
+    </form>
+  </div>
 </div>
 
-
-
-<div id="placeholder" class="col-md-8"></div>
-
-<div class="container text-center col-md-4">
-  <h3 class="text-center" style="padding: 15px;">Upcoming Events</h3>
-  <table class="table table-striped">
-    <thead>
-        <th>Event</th>
-        <th>Details</th>
-        <th>Date/Time</th>
-        <th>Posted by</th>
-    </thead>
-    {% for event in events%}
-      <tr class="eventrow">
-        <td class="eventtitle"> {{ event[0] }} </td>
-        <td> {{ event[1] }} </td>
-        <td class="date"> {{ event[2] }} </td>
-        <td> {{ event[3] }} </td>
-      <tr>
-    {% endfor %}
-  </table>
-
-  <form action="/newevent" method="POST" id="newevent_form">
-    <input type="text" name="team_id" value="{{team[1]}}" hidden>
-    <input type="submit" name="add_event" class="btn btn-info" value="Add New Event">
-  </form>
-
-</div>
-
+<!-- Members -->
 <div id="placeholder" class="col-md-8"></div>
 <div id="members" class="col-md-4 container">
   <h3 class="text-center">Team Members</h3>
@@ -100,8 +95,8 @@
         <tr>
       {% endfor %}
     </table>
-  <form class="container" action="/addmember" method="POST" id="newmember_form">
-    <div class="form-group col-sm-4">
+  <form class="container col-sm-12" action="/addmember" method="POST" id="newmember_form">
+    <div class="form-group">
       <input type="text" name="team" value="{{team}}" hidden>
       <label class="control-label" for="newmember">Add a user to the team</label>
       <div class="input-group">

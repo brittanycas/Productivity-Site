@@ -52,12 +52,7 @@
         {% for team in userdata%}
           {% if not team[3] %}
           <tr class="text-center">
-            <td>
-              <form method="POST" action="/team" id="{{ team[0] }}">
-              <input type="hidden" name="team_id" value="{{ team[2] }}">
-              <input type="submit" name="{{ team[0] }}" class="btn btn-link" value="{{ team[0] }}">
-              </form>
-            </td>
+            <td>{{ team[0] }}</td>
             <td>
               <form method="POST" action="/join" id="{{ team[0] }}">
                 <input type="hidden" name="team_id" value="{{ team[2] }}">

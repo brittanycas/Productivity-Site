@@ -10,6 +10,9 @@ app = Flask(__name__)
 app.secret_key = secret_key
 calendar.setfirstweekday(calendar.SUNDAY)
 
+def get_teamname(c, teamid):
+    c.execute("SELECT teamname FROM teams WHERE teamid=%s", (teamid,))
+    return c.fetchone()[0]
 
 @app.route('/')
 def home():
@@ -26,9 +29,8 @@ def home():
             noteam = "true"
         else:
             for team in userteams:
-                c.execute("SELECT teamname FROM teams WHERE teamid=%s", (team[1],))
-                teamname = c.fetchone()
-                userdata.append([teamname[0], team[2], team[1], team[4]])
+                teamname = get_teamname(c, team[0])
+                userdata.append([teamname, team[2], team[1], team[4]])
             noteam = "false"
 
         # Close database connection
@@ -140,14 +142,15 @@ def createteam():
         elif request.method == "POST":
             # Check for data in login form
             if not request.form.get('teamname'):
-                return "Please enter a team name"
+                message = "Please enter a team name."
+                return render_template('timed_redirect.html', message=message, team_id="false")
             else:
                 # Open connection to the database
-                new_team = request.form.get('teamname')
                 conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
                 c = conn.cursor()
 
-                # Check for existing users
+                # Check for an existing team with that name
+                new_team = request.form.get('teamname')
                 c.execute("SELECT * FROM teams WHERE teamname=%s", (new_team,))
                 existing_team = c.fetchall()
 
@@ -155,8 +158,8 @@ def createteam():
                     c.execute("INSERT INTO teams (teamname) VALUES (%s)", (new_team,))
                     c.execute("SELECT teamid FROM teams WHERE teamname=%s", (new_team,))
                     new_teamid = c.fetchone()
-                    c.execute("INSERT INTO user_team (userid, teamid, accept) VALUES (%s, %s, %s)",
-                              (session.get('userid'), new_teamid[0], True))
+                    c.execute("INSERT INTO user_team (userid, teamid, role, isadmin, accept) VALUES (%s, %s, %s, %s, %s)",
+                              (session.get('userid'), new_teamid[0], "Leader", True, True))
 
                     # Close database connection
                     conn.commit()
@@ -166,7 +169,8 @@ def createteam():
                 else:
                     conn.commit()
                     conn.close()
-                    return "Team name is already in use"
+                    message = "Sorry, " + new_team + " is already in use."
+                    return render_template('timed_redirect.html', message=message, team_id="false")
 
 
 @app.route('/team', methods=["GET", "POST"])
@@ -185,10 +189,9 @@ def team():
             c = conn.cursor()
 
             # Load team name
-            c.execute("SELECT teamname FROM teams WHERE teamid=%s", (team_id,))
-            teamname = c.fetchone()[0]
+            teamname = get_teamname(c, team_id)
             teamdata.append(teamname)
-            teamdata.append(request.form.get('team_id'))
+            teamdata.append(team_id)
 
             # Load team members
             memberslist = []
@@ -404,8 +407,6 @@ def sendmail():
         # Get all team accepted team members emails
         conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
         c = conn.cursor()
-        c.execute("SELECT teamname FROM teams WHERE teamid=%s", (team_id,))
-        teamname = c.fetchone()[0]
         c.execute("SELECT userid FROM user_team WHERE teamid=%s", (team_id,))
         members = c.fetchall()
         emails = []
@@ -437,8 +438,7 @@ def inbox():
         c.execute("SELECT teamid FROM user_team WHERE userid=%s", (session.get('userid'),))
         teams = c.fetchall()[0]
         for team in teams:
-            c.execute("SELECT teamname FROM teams WHERE teamid=%s", (team,))
-            teamname = c.fetchone()[0]
+            teamname = get_teamname(c, team)
             c.execute("SELECT userid, subject, message, sent FROM messages WHERE teamid=%s", (team,))
             allmessage = c.fetchall()
             for eachmessage in allmessage:
