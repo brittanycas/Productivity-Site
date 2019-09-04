@@ -243,12 +243,13 @@ def team():
 
             # Gather messages
             messages = []
-            c.execute("SELECT userid, subject, message, sent FROM messages WHERE teamid=%s", (team_id,))
-            allmessage = c.fetchall()
+            c.execute("SELECT userid, subject, message, sent FROM messages WHERE teamid=%s ORDER BY sent DESC", (team_id,))
+            allmessage = c.fetchall()[:5]
             for eachmessage in allmessage:
                 user_sent = get_username(c, eachmessage[0])
                 sent = eachmessage[3].strftime("%I:%M %p") + " on " + eachmessage[3].strftime("%m/%d/%y")
-                messages.append([user_sent, eachmessage[1], eachmessage[2], sent])
+                mes_text = eachmessage[2] if len(eachmessage[2]) < 100 else eachmessage[2][:100] + '...'
+                messages.append([user_sent, eachmessage[1], mes_text, sent])
 
             # Close database connection
             close(conn)
@@ -444,7 +445,8 @@ def inbox():
             for eachmessage in allmessage:
                 user_sent = get_username(c, eachmessage[1])
                 sent = eachmessage[5].strftime("%I:%M %p") + " on " + eachmessage[5].strftime("%m/%d/%y")
-                messages.append([teamname, user_sent, eachmessage[3], eachmessage[4], sent, eachmessage[0]])
+                mes_text = eachmessage[4] if len(eachmessage[4]) < 100 else eachmessage[4][:100] + '...'
+                messages.append([teamname, user_sent, eachmessage[3], mes_text, sent, eachmessage[0]])
         close(conn)
         return render_template('/inbox.html', messages=messages)
     else:
