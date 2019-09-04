@@ -3,57 +3,126 @@
 {% block title %}{{ team[0] }}{% endblock %}
 
 {% block body %}
-<h1 class="text-center page-header">{{ team[0] }} - Admin</h1>
+<h1 class="text-center page-header">{{ team[0] }} admin</h1>
 
-<div id="members" class="col-sm-5 col-sm-offset-3 container">
-  <h3 class="text-center" style="padding: 15px;">Team Members</h3>
-  <table class="table table-striped">
-    <thead>
-        <th>Username</th>
-        <th>Role</th>
-    </thead>
-    {% for member in members%}
-      <tr>
-        <td> {{ member[0] }} </td>
-        <td>
-          <select class="form-control role" name="role" id="{{ member[1] }}">
-            <option value="None">None Set</option>
-            <option value="Leader">Leader</option>
-            <option value="Member">Member</option>
-            <option value="Assistant">Assistant</option>
-          </select>
-        </td>
-      <tr>
-    {% endfor %}
-  </table>
+<div class="container col-md-12">
+  <h3 class="text-center" style="padding-bottom: 15px;">Team messages</h3>
+  <div class="container col-md-8 col-md-offset-2">
+    <table class="table table-striped">
+      <thead>
+          <th class="col-md-2 text-center">From</th>
+          <th class="col-md-2 text-center">Subject</th>
+          <th class="col-md-6 text-center">Message</th>
+          <th class="col-md-2 text-center">Sent</th>
+          <th class="col-md-2 text-center">Delete</th>
+      </thead>
+        {% for message in messages%}
+          <tr class="text-center">
+            <td> {{ message[0] }} </td>
+            <td> {{ message[1] }} </td>
+            <td> {{ message[2] }} </td>
+            <td> {{ message[3] }} </td>
+            <td>
+              <form action="/deletemessage" method="POST" id="'mess'+{{message[4]}}">
+                <input type="text" hidden name="team_id" value="{{team[1]}}">
+                <input type="text" hidden name="mess_id" value="{{message[4]}}">
+                <input class="btn btn-default text-danger" type="submit" name="'mess'+{{message[4]}}"" value="Delete" onclick="event.preventDefault(); myalert(this)">
+              </form>
+            </td>
+          <tr>
+      {% endfor %}
+    </table>
+  </div>
 </div>
 
-<div class="container text-center col-sm-4">
-  <h3 class="text-center" style="padding: 15px;">Upcoming Events</h3>
-  <table class="table table-striped">
-    <thead>
-        <th>Event</th>
-        <th>Details</th>
-        <th>Date/Time</th>
-        <th>Posted by</th>
-    </thead>
-    {% for event in events%}
-      <tr class="eventrow">
-        <td class="eventtitle"> {{ event[0] }} </td>
-        <td> {{ event[1] }} </td>
-        <td class="date"> {{ event[2] }} </td>
-        <td> {{ event[3] }} </td>
-      <tr>
-    {% endfor %}
-  </table>
+<!-- Events -->
+<div class="col-md-12">
+  <div class="container text-center col-md-8 col-md-offset-2">
+    <h3 class="text-center" style="padding: 15px;">Upcoming Events</h3>
+    <table class="table table-striped">
+      <thead>
+          <th>Event</th>
+          <th>Details</th>
+          <th>Date/Time</th>
+          <th>Posted by</th>
+          <th>Delete?</th>
+      </thead>
+      {% for event in events%}
+        <tr class="eventrow">
+          <td class="eventtitle"> {{ event[0] }} </td>
+          <td> {{ event[1] }} </td>
+          <td class="date"> {{ event[2] }} </td>
+          <td> {{ event[3] }} </td>
+          <td>
+            <form action="/deleteevent" method="POST" id="'event'+{{event[4]}}">
+              <input type="text" hidden name="team_id" value="{{team[1]}}">
+              <input type="text" hidden name="event_id" value="{{event[4]}}">
+              <input class="btn btn-default text-danger" type="submit" name="'event'+{{event[4]}}" value="Delete" onclick="event.preventDefault(); myalert(this)">
+            </form>
+          </td>
+        <tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+
+<!-- Members -->
+<div class="col-md-12">
+  <div id="members" class="col-md-8 col-md-offset-2 container">
+    <h3 class="text-center">Team Members</h3>
+      <table class="table table-striped text-center">
+        <thead>
+            <th class="text-center">Username</th>
+            <th class="text-center">Edit Role</th>
+            <th class="text-center">Remove?</th>
+        </thead>
+        {% for member in members%}
+          <tr>
+            <td> {{ member[0] }} </td>
+            <td class="">
+              <form action="/changerole" method="POST" id="'role'+{{member[2]}}">
+                <input type="text" hidden name="team_id" value="{{team[1]}}">
+                <input type="text" hidden name="member_id" value="{{member[2]}}">
+                <div class="input-group">
+                  <input class="form-control" type="text" name="role" value={{member[1]}}>
+                  <span class="input-group-btn">
+                  <input class="btn btn-info" type="submit" name="submit_button" value="Confirm" onclick="rolechange(this);"style="border: 0px">
+                  </span>
+                </div>
+              </form>
+            </td>
+            <td>
+              <form action="/removeuser" method="POST" id="'member'+{{member[2]}}">
+                <input type="text" hidden name="team_id" value="{{team[1]}}">
+                <input type="text" hidden name="member_id" value="{{member[2]}}">
+                <input class="btn btn-default text-danger" type="submit" name="'member'+{{member[2]}}" value="Remove" onclick="event.preventDefault(); myalert(this)">
+              </form>
+            </td>
+
+          <tr>
+        {% endfor %}
+      </table>
+  </div>
 </div>
 
 
+
+
+<!-- Hidden input to decode calendar text -->
+<textarea name="input" rows="8" cols="80" id="input" hidden>{{calendar}}</textarea>
 
   <script type="text/javascript">
-    let memberroles = document.querySelectorAll(".role")
-    console.log(memberroles)
+    //Confirm before items
+    function myalert(e){
+      event.preventDefault();
+      if (confirm("Are you sure you want to remove this?")){
+          document.getElementById(e.name).submit()
+      }
+    }
 
+    function rolechange(){
+      alert("User role has been updated")
+    }
   </script>
 
 {% endblock %}

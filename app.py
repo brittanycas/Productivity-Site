@@ -10,16 +10,32 @@ app = Flask(__name__)
 app.secret_key = secret_key
 calendar.setfirstweekday(calendar.SUNDAY)
 
+
+def connection():
+    return mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
+
+
+def close(conn):
+    conn.commit()
+    conn.close()
+
+
 def get_teamname(c, teamid):
     c.execute("SELECT teamname FROM teams WHERE teamid=%s", (teamid,))
     return c.fetchone()[0]
+
+
+def get_username(c, userid):
+    c.execute("SELECT username FROM users WHERE userid=%s", (userid,))
+    return c.fetchone()[0]
+
 
 @app.route('/')
 def home():
     if session.get('logged_in'):
         userdata = []
         # Open connection to the database
-        conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
+        conn = connection()
         c = conn.cursor()
 
         # Load user data
@@ -28,14 +44,13 @@ def home():
         if not userteams:
             noteam = "true"
         else:
-            for team in userteams:
-                teamname = get_teamname(c, team[0])
-                userdata.append([teamname, team[2], team[1], team[4]])
+            for eachteam in userteams:
+                teamname = get_teamname(c, eachteam[1])
+                userdata.append([teamname, eachteam[2], eachteam[1], eachteam[4]])
             noteam = "false"
 
         # Close database connection
-        conn.commit()
-        conn.close()
+        close(conn)
         return render_template('index.html', userdata=userdata, noteam=noteam)
     else:
         return render_template('landing.html')
@@ -56,7 +71,7 @@ def register():
             return render_template('register.html', message=message, success="false", fail="true")
         else:
             # Open connection to the database
-            conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
+            conn = connection()
             c = conn.cursor()
 
             # Check for existing users
@@ -65,8 +80,7 @@ def register():
             c.execute("SELECT * FROM users WHERE email=%s", (request.form.get('email'),))
             existing_email = c.fetchall()
             if len(existing_user) != 0:
-                conn.commit()
-                conn.close()
+                close(conn)
                 message = "Sorry, that username is already in use."
                 return render_template('register.html', message=message, success="false", fail="true")
             if len(existing_email) != 0:
@@ -82,9 +96,7 @@ def register():
                             VALUES (%s, %s, %s, %s)""", (request.form.get('username'), request.form.get('name'),
                                                          request.form.get('email'), hashed_pass,))
                 # Close database connection
-                conn.commit()
-                conn.close()
-
+                close(conn)
                 return render_template('register.html', success="true", fail="false")
 
 
@@ -99,7 +111,7 @@ def login():
             return render_template('login.html', fail="true", message=message)
         else:
             # Open connection to the database
-            conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
+            conn = connection()
             c = conn.cursor()
 
             # Check for existing users
@@ -107,8 +119,7 @@ def login():
             existing_user = c.fetchall()
 
             # Close database connection
-            conn.commit()
-            conn.close()
+            close(conn)
 
             # Check for valid username
             if len(existing_user) == 0:
@@ -146,7 +157,7 @@ def createteam():
                 return render_template('timed_redirect.html', message=message, team_id="false")
             else:
                 # Open connection to the database
-                conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
+                conn = connection()
                 c = conn.cursor()
 
                 # Check for an existing team with that name
@@ -162,13 +173,11 @@ def createteam():
                               (session.get('userid'), new_teamid[0], "Leader", True, True))
 
                     # Close database connection
-                    conn.commit()
-                    conn.close()
+                    close(conn)
                     return redirect('/')
 
                 else:
-                    conn.commit()
-                    conn.close()
+                    close(conn)
                     message = "Sorry, " + new_team + " is already in use."
                     return render_template('timed_redirect.html', message=message, team_id="false")
 
@@ -176,7 +185,6 @@ def createteam():
 @app.route('/team', methods=["GET", "POST"])
 def team():
     if request.method == "POST":
-        teamdata = []
         if request.form.get('team_id'):
             team_id = request.form.get('team_id')
         else:
@@ -185,21 +193,23 @@ def team():
             return redirect('/')
         else:
             # Open connection to the database
-            conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
+            conn = connection()
             c = conn.cursor()
 
             # Load team name
             teamname = get_teamname(c, team_id)
-            teamdata.append(teamname)
-            teamdata.append(team_id)
+            teamdata = [teamname, team_id]
+
+            # Check if user is admin
+            c.execute("SELECT isadmin FROM user_team WHERE teamid=%s AND userid=%s", (team_id, session.get('userid')))
+            isadmin = c.fetchone()[0]
 
             # Load team members
             memberslist = []
             c.execute("SELECT * FROM user_team WHERE teamid=%s AND accept=%s", (team_id, True),)
             members = c.fetchall()
             for member in members:
-                c.execute("SELECT username FROM users WHERE userid=%s", (member[0],))
-                membername = c.fetchone()[0]
+                membername = get_username(c, member[0])
                 memberslist.append([membername, member[2]])
 
             # Load team events
@@ -207,8 +217,7 @@ def team():
             c.execute("SELECT * FROM events WHERE teamid=%s", (team_id,))
             allevents = c.fetchall()
             for oneevent in allevents:
-                c.execute("SELECT username FROM users WHERE userid=%s", (oneevent[2],))
-                usersname = c.fetchone()[0]
+                usersname = get_username(c, oneevent[2])
                 date = oneevent[5]
                 time = (datetime.min + (oneevent[6])).time()
                 eventtime = date.strftime("%a %b %d %Y") + " at " + time.strftime("%I:%M %p")
@@ -237,17 +246,15 @@ def team():
             c.execute("SELECT userid, subject, message, sent FROM messages WHERE teamid=%s", (team_id,))
             allmessage = c.fetchall()
             for eachmessage in allmessage:
-                c.execute("SELECT username FROM users WHERE userid=%s", (eachmessage[0],))
-                user_sent = c.fetchone()[0]
+                user_sent = get_username(c, eachmessage[0])
                 sent = eachmessage[3].strftime("%I:%M %p") + " on " + eachmessage[3].strftime("%m/%d/%y")
                 messages.append([user_sent, eachmessage[1], eachmessage[2], sent])
 
             # Close database connection
-            conn.commit()
-            conn.close()
+            close(conn)
 
             return render_template('team.html', team=teamdata, members=memberslist, events=events, calendar=formatcal,
-                                   act=active_months, messages=messages)
+                                   act=active_months, messages=messages, isadmin=isadmin)
     else:
         return redirect('/')
 
@@ -259,7 +266,7 @@ def addmember():
             return redirect('/')
         else:
             # Open database connection
-            conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
+            conn = connection()
             c = conn.cursor()
 
             # Find user id for new member
@@ -272,8 +279,7 @@ def addmember():
 
             # Check that the submitted username was valid
             if not memberid:
-                conn.commit()
-                conn.close()
+                close(conn)
                 message = request.form.get('newmember') + " is not a valid username"
                 return render_template('timed_redirect.html', message=message, team_id=teamid[1])
             else:
@@ -283,13 +289,11 @@ def addmember():
                 if not inteam:
                     # Add user to team
                     c.execute("INSERT INTO user_team (userid, teamid, accept) VALUES (%s,%s,%s)", (memberid[0], teamid[1], False))
-                    conn.commit()
-                    conn.close()
+                    close(conn)
                     message = request.form.get('newmember') + " has been sent an invite to the team."
                     return render_template('timed_redirect.html', message=message, team_id=teamid[1])
                 else:
-                    conn.commit()
-                    conn.close()
+                    close(conn)
                     message = request.form.get('newmember') + " is already a member of the team."
                     return render_template('timed_redirect.html', message=message, team_id=teamid[1])
     else:
@@ -299,7 +303,7 @@ def addmember():
 @app.route('/join', methods=["GET", "POST"])
 def join():
     if request.method == "POST":
-        conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
+        conn = connection()
         c = conn.cursor()
 
         # Remove user from team
@@ -307,8 +311,7 @@ def join():
                   (session.get('userid'), (request.form.get('team_id')),))
 
         # Close database connection
-        conn.commit()
-        conn.close()
+        close(conn)
         return redirect('/')
 
     else:
@@ -317,7 +320,7 @@ def join():
 @app.route('/leave', methods=["GET", "POST"])
 def leave():
     if request.method == "POST":
-        conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
+        conn = connection()
         c = conn.cursor()
 
         # Remove user from team
@@ -325,8 +328,7 @@ def leave():
                   (session.get('userid'), (request.form.get('team_id')),))
 
         # Close database connection
-        conn.commit()
-        conn.close()
+        close(conn)
         return redirect('/')
     else:
         return redirect('/')
@@ -363,7 +365,7 @@ def addevent():
             return render_template('timed_redirect.html', message=message, team_id=team_id)
         else:
             # Add event to the database
-            conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
+            conn = connection()
             c = conn.cursor()
             data = (
                 team_id, str(session.get('userid')),
@@ -387,8 +389,7 @@ def addevent():
             c.execute("DELETE FROM events WHERE date between %s AND %s", (old_date_start, old_date_end,))
 
             # Close database connection
-            conn.commit()
-            conn.close()
+            close(conn)
 
             return redirect(url_for('team', team_id_form=team_id), code=307)
     else:
@@ -405,7 +406,7 @@ def sendmail():
         if not team_id:
             return redirect('/')
         # Get all team accepted team members emails
-        conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
+        conn = connection()
         c = conn.cursor()
         c.execute("SELECT userid FROM user_team WHERE teamid=%s", (team_id,))
         members = c.fetchall()
@@ -420,8 +421,7 @@ def sendmail():
 
         # Send message
         c.execute("INSERT INTO messages (teamid, userid, subject, message) VALUES (%s, %s, %s, %s)", data)
-        conn.commit()
-        conn.close()
+        close(conn)
 
         return redirect(url_for('team', team_id_form=team_id), code=307)
 
@@ -433,22 +433,148 @@ def sendmail():
 def inbox():
     if session.get('logged_in'):
         messages = []
-        conn = mysql.connect(host=db['host'], user=db['user'], passwd=db['password'], database=db['database'])
+        conn = connection()
         c = conn.cursor()
         c.execute("SELECT teamid FROM user_team WHERE userid=%s", (session.get('userid'),))
         teams = c.fetchall()[0]
         for team in teams:
             teamname = get_teamname(c, team)
-            c.execute("SELECT userid, subject, message, sent FROM messages WHERE teamid=%s", (team,))
+            c.execute("SELECT * FROM messages WHERE teamid=%s", (team,))
             allmessage = c.fetchall()
             for eachmessage in allmessage:
-                c.execute("SELECT username FROM users WHERE userid=%s", (eachmessage[0],))
-                user_sent = c.fetchone()[0]
-                sent = eachmessage[3].strftime("%I:%M %p") + " on " + eachmessage[3].strftime("%m/%d/%y")
-                messages.append([teamname, user_sent, eachmessage[1], eachmessage[2], sent])
-        conn.commit()
-        conn.close()
+                user_sent = get_username(c, eachmessage[1])
+                sent = eachmessage[5].strftime("%I:%M %p") + " on " + eachmessage[5].strftime("%m/%d/%y")
+                messages.append([teamname, user_sent, eachmessage[3], eachmessage[4], sent, eachmessage[0]])
+        close(conn)
         return render_template('/inbox.html', messages=messages)
+    else:
+        return redirect('/')
+
+
+@app.route('/admin', methods=["GET", "POST"])
+def admin():
+    if request.method == "POST":
+        if request.form.get('team_id'):
+            team_id = request.form.get('team_id')
+        else:
+            team_id = request.args.get('team_id_form')
+        if not team_id:
+            return redirect('/')
+
+        # Confirm that user has admin privilege
+        conn = connection()
+        c = conn.cursor()
+        c.execute("SELECT isadmin FROM user_team WHERE userid=%s AND teamid=%s",
+                  (session.get('userid'), team_id,))
+        isadmin = c.fetchone()[0]
+        if not isadmin:
+            close(conn)
+            message = "Sorry, you do not have admin rights"
+            return render_template('timed_redirect.html', message=message)
+        elif isadmin:
+            # Load admin page
+
+            # Get team info
+            teamname = get_teamname(c, team_id)
+            teamdata = [teamname, team_id]
+
+            # Load team members
+            memberslist = []
+            c.execute("SELECT * FROM user_team WHERE teamid=%s AND accept=%s", (team_id, True), )
+            members = c.fetchall()
+            for member in members:
+                membername = get_username(c, member[0])
+                memberslist.append([membername, member[2], member[0]])
+
+            # Load team events
+            events = []
+            c.execute("SELECT * FROM events WHERE teamid=%s", (team_id,))
+            allevents = c.fetchall()
+            for oneevent in allevents:
+                usersname = get_username(c, oneevent[2],)
+                date = oneevent[5]
+                time = (datetime.min + (oneevent[6])).time()
+                eventtime = date.strftime("%a %b %d %Y") + " at " + time.strftime("%I:%M %p")
+                events.append([oneevent[3], oneevent[4], eventtime, usersname, oneevent[0]])
+
+            # Gather messages
+            messages = []
+            c.execute("SELECT * FROM messages WHERE teamid=%s", (team_id,))
+            allmessage = c.fetchall()
+            for eachmessage in allmessage:
+                user_sent = get_username(c, eachmessage[2])
+                sent = eachmessage[5].strftime("%I:%M %p") + " on " + eachmessage[5].strftime("%m/%d/%y")
+                messages.append([user_sent, eachmessage[3], eachmessage[4], sent, eachmessage[0]])
+
+            # Close database connection
+            close(conn)
+            return render_template('teamadmin.html', team=teamdata, members=memberslist, events=events, messages=messages)
+        else:
+            # Something went wrong
+            close(conn)
+            message = "Sorry, something went wrong"
+            return render_template('timed_redirect.html', message=message)
+    else:
+        return redirect('/')
+
+
+@app.route('/deletemessage', methods=["GET", "POST"])
+def deletemess():
+    if request.method == "POST":
+        if not request.form.get('mess_id'):
+            return redirect('/')
+        else:
+            conn = connection()
+            c = conn.cursor()
+            c.execute("DELETE FROM messages WHERE messageid=%s", (request.form.get('mess_id'),))
+            close(conn)
+            return redirect(url_for('admin', team_id_form=request.form.get('team_id')), code=307)
+    else:
+        return redirect('/')
+
+
+@app.route('/deleteevent', methods=["GET", "POST"])
+def deleteevent():
+    if request.method == "POST":
+        if not request.form.get('event_id'):
+            return redirect('/')
+        else:
+            conn = connection()
+            c = conn.cursor()
+            c.execute("DELETE FROM events WHERE id=%s", (request.form.get('event_id'),))
+            close(conn)
+            return redirect(url_for('admin', team_id_form=request.form.get('team_id')), code=307)
+    else:
+        return redirect('/')
+
+
+@app.route('/changerole', methods=["GET", "POST"])
+def changerole():
+    if request.method == "POST":
+        if not request.form.get('member_id'):
+            return redirect('/')
+        else:
+            conn = connection()
+            c = conn.cursor()
+            data = (request.form.get('role'), request.form.get('member_id'), request.form.get('team_id'))
+            c.execute("UPDATE user_team SET role = %s WHERE userid=%s AND teamid=%s", data)
+            close(conn)
+            return redirect(url_for('admin', team_id_form=request.form.get('team_id')), code=307)
+    else:
+        return redirect('/')
+
+@app.route('/removeuser', methods=["GET", "POST"])
+def removeuser():
+    if request.method == "POST":
+        if not request.form.get('member_id'):
+            return redirect('/')
+        else:
+            conn = connection()
+            c = conn.cursor()
+            c.execute("DELETE FROM user_team WHERE userid=%s AND teamid=%s",
+                      (request.form.get('member_id'), request.form.get('team_id')))
+            close(conn)
+            return redirect(url_for('admin', team_id_form=request.form.get('team_id')), code=307)
     else:
         return redirect('/')
 
