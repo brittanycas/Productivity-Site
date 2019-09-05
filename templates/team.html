@@ -33,6 +33,12 @@
       {% endfor %}
     </table>
   </div>
+  <div class="text-center">
+    <form action="/messageboard" method="POST">
+      <input hidden name="team_id" value="{{team[1]}}">
+      <input class="btn btn-link btn-lg" type="submit" value="View all messages">
+    </form>
+  </div>
   <div class="col-sm-12">
   <div id="messaging" class="col-sm-offset-2 text-center">
     <form action="/mail" method="POST" id="send_mail" class="form container panel col-sm-8 padding">

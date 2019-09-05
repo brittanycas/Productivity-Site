@@ -301,6 +301,41 @@ def addmember():
         return redirect('/')
 
 
+@app.route('/messageboard', methods=["GET", "POST"])
+def messageboard():
+    if request.method == "POST":
+        if request.form.get('team_id'):
+            team_id = request.form.get('team_id')
+        else:
+            team_id = request.args.get('team_id_form')
+        if not team_id:
+            return redirect('/')
+        else:
+            # Open connection to the database
+            conn = connection()
+            c = conn.cursor()
+
+            # Load team name
+            teamname = get_teamname(c, team_id)
+            teamdata = [teamname, team_id]
+
+            # Gather messages
+            messages = []
+            c.execute("SELECT userid, subject, message, sent FROM messages WHERE teamid=%s ORDER BY sent DESC", (team_id,))
+            allmessage = c.fetchall()
+            for eachmessage in allmessage:
+                user_sent = get_username(c, eachmessage[0])
+                sent = eachmessage[3].strftime("%I:%M %p") + " on " + eachmessage[3].strftime("%m/%d/%y")
+                messages.append([user_sent, eachmessage[1], eachmessage[2], sent])
+
+            # Close database connection
+            close(conn)
+
+            return render_template('messageboard.html', team=teamdata, messages=messages)
+    else:
+        return redirect('/')
+
+
 @app.route('/join', methods=["GET", "POST"])
 def join():
     if request.method == "POST":
@@ -440,7 +475,7 @@ def inbox():
         teams = c.fetchall()[0]
         for team in teams:
             teamname = get_teamname(c, team)
-            c.execute("SELECT * FROM messages WHERE teamid=%s", (team,))
+            c.execute("SELECT * FROM messages WHERE teamid=%s ORDER BY sent DESC", (team,))
             allmessage = c.fetchall()
             for eachmessage in allmessage:
                 user_sent = get_username(c, eachmessage[1])

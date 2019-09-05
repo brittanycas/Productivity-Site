@@ -1,0 +1,50 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ team[0] }} Message Board{% endblock %}
+
+{% block body %}
+
+  <h3 class="text-center" style="padding-bottom: 15px;">Messages</h3>
+  {% for message in messages%}
+  <div class="col-sm-8 col-sm-offset-2">
+    <div class="panel panel-primary">
+      <div class="panel-heading">
+        <h3 class="panel-title">{{ message[1] }}</h3>
+      </div>
+      <div class="panel-body">
+        {{message[2]}}
+        <br>
+        <span class="text-muted">- {{message[0]}}</span>
+      </div>
+      <div class="panel-footer">Sent: {{message[3]}}</div>
+    </div>
+    </div>
+  {% endfor %}
+
+  <div class="col-sm-12">
+  <div id="messaging" class=" col-sm-8col-sm-offset-2 text-center">
+    <form action="/mail" method="POST" id="send_mail" class="form container panel padding">
+      <fieldset class="">
+      <legend class="">Add a message to the message board</legend>
+      <input type="text" name="team_id" value="{{team[1]}}" hidden>
+      <div class="form-group" id="subject_input">
+        <label class="control-label col-sm-2" for="subject" id="subject_label">Subject</label>
+        <div class="col-sm-10">
+          <input class="form-control" type="text" name="subject" placeholder="Message subject" id="subject" autocomplete="off">
+        </div>
+      </div>
+      <div class="form-group" id="body_input">
+        <label class="control-label col-sm-2" for="body" id="body_label">Body</label>
+        <div class="col-sm-10">
+          <textarea class="form-control" name="body" rows="4" placeholder="Message body" id="body"></textarea>
+        </div>
+      </div>
+        <input class="btn btn-primary" type="submit" name="mail_button" id="mail_button" value="Send">
+        </fieldset>
+    </form>
+  </div>
+  </div>
+</div>
+
+
+{% endblock %}
